@@ -40,20 +40,25 @@ const binaryExtensions = new Set([
 	".avi",
 	".mov",
 	".ico",
+	".svg"
 	// Add more binary extensions as needed
 ]);
 
 export async function GET(request: Request) {
+	
 	console.log("Received request to fetch repository contents");
 	const { searchParams } = new URL(request.url);
 	const repoUrl = searchParams.get("repoUrl");
+	const ignoreExtensionsAndFiles = searchParams.get("ignoreExtensionsAndFiles");
 
-	if (!repoUrl) {
+	console.log("ignoreExtensionsAndFiles", ignoreExtensionsAndFiles);
+
+	if (!repoUrl || repoUrl.length === 0) {
 		return Response.json({ message: "Missing repoUrl query parameter" }, { status: 400 });
 	}
 
 	try {
-		const contents = await cloneAndReadRepo(repoUrl);
+		const contents = await cloneAndReadRepo(repoUrl, searchParams.get("ignoreExtensionsAndFiles") ?? undefined);
 		return Response.json({ contents });
 	} catch (error) {
 		return new Response(
@@ -63,22 +68,7 @@ export async function GET(request: Request) {
 	}
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	const { url } = req.query;
-
-	if (typeof url !== "string") {
-		return res.status(400).json({ message: "Invalid URL parameter" });
-	}
-
-	try {
-		const contents = await cloneAndReadRepo(url);
-		res.status(200).json({ contents });
-	} catch (error) {
-		res.status(500).json({ message: "Error fetching repository contents" });
-	}
-}
-
-async function cloneAndReadRepo(repoUrl: string): Promise<string> {
+async function cloneAndReadRepo(repoUrl: string, ignoreExtensionsAndFiles?: string): Promise<string> {
 	const repoName = repoUrl.split("/").pop()?.replace(".git", "") || "temp-repo";
 	const tempDir = path.join("/tmp", repoName);
 
@@ -86,7 +76,7 @@ async function cloneAndReadRepo(repoUrl: string): Promise<string> {
 
 	try {
 		await execPromise(`git clone ${repoUrl} ${tempDir}`);
-		const contents = await readFilesRecursively(tempDir);
+		const contents = await readFilesRecursively(tempDir, ignoreExtensionsAndFiles);
 		console.log(`Finished reading repository contents`);
 		return contents;
 	} catch (error) {
@@ -97,19 +87,32 @@ async function cloneAndReadRepo(repoUrl: string): Promise<string> {
 	}
 }
 
-async function readFilesRecursively(dir: string): Promise<string> {
+async function readFilesRecursively(dir: string, ignoreExtensionsAndFiles?: string): Promise<string> {
 	let contents = "";
 	const files = await fs.promises.readdir(dir);
 
-	for (const file of files) {
-		const filePath = path.join(dir, file);
-		const stat = await fs.promises.stat(filePath);
+  // Split the ignoreExtensionsAndFiles string into an array, trim each item, and filter out empty strings
+  const ignoreList = ignoreExtensionsAndFiles
+    ? ignoreExtensionsAndFiles.split(",").map(item => item.trim()).filter(item => item !== "")
+    : [];
 
-		if (stat.isDirectory()) {
-			if (file === ".git") continue;
-			contents += await readFilesRecursively(filePath);
-		} else {
-			const ext = path.extname(file).toLowerCase();
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = await fs.promises.stat(filePath);
+    if (stat.isDirectory()) {
+      if (file === ".git") continue;
+      contents += await readFilesRecursively(filePath, ignoreExtensionsAndFiles);
+    } else {
+      const ext = path.extname(file).toLowerCase();
+      const shouldIgnore = ignoreList.some(
+        (item) => file.endsWith(item) || ext === `.${item}`
+      );
+
+			if (shouldIgnore) {
+				// Skip this file
+				continue;
+			}
+
 			if (binaryExtensions.has(ext)) {
 				contents += `${FILE_PREFIX} ${path.relative("/tmp", filePath)}\n[Binary file, content not displayed]\n\n`;
 			} else {

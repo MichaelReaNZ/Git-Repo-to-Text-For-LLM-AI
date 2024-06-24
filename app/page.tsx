@@ -12,11 +12,11 @@ const Home: React.FC = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const handleRepoSubmit = async (url: string) => {
+	const handleRepoSubmit = async (data: { url: string; ignoreExtensionsAndFiles: string }) => {
 		setIsLoading(true);
 		setError(null);
 		try {
-			const contents = await fetchRepoContents(url);
+			const contents = await fetchRepoContents(data.url, data.ignoreExtensionsAndFiles);
 			setRepoContents(contents);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "An error occurred");
@@ -24,9 +24,8 @@ const Home: React.FC = () => {
 			setIsLoading(false);
 		}
 	};
-
 	return (
-		<main className="container mx-auto p-8">
+			<main className="container mx-auto p-8">
 			<h1 className="text-2xl font-bold mb-4">Git Repo to Text For LLM AI</h1>
 			<RepoInputForm onSubmit={handleRepoSubmit} />
 			{isLoading && <p>Loading repository contents... (This can take some time)</p>}
@@ -34,6 +33,7 @@ const Home: React.FC = () => {
 			{repoContents && <RepoContentDisplay className="w-full" repoPlainTextContent={repoContents} />}
 		</main>
 	);
+	
 };
 
 export default Home;
