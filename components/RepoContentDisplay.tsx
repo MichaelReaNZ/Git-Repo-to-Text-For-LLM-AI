@@ -1,26 +1,37 @@
-// components/RepoContentDisplay.tsx
-import React from "react";
+import { CheckIcon, CopyIcon } from "@radix-ui/react-icons";
 
-interface RepoContentDisplayProps {
-	contents: string;
-}
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCopyToClipboardWithTimeout } from "@/hooks/useCopyToClipboardWithTimeout";
 
-const RepoContentDisplay: React.FC<RepoContentDisplayProps> = ({ contents }) => {
-	const handleCopyToClipboard = () => {
-		navigator.clipboard.writeText(contents);
+type CardProps = React.ComponentProps<typeof Card>;
+
+export function RepoContentDisplay({
+	repoPlainTextContent,
+	className,
+	...props
+}: CardProps & { repoPlainTextContent: string }) {
+	const [isCopiedWithTimeout, copyToClipboardWithTimeout] = useCopyToClipboardWithTimeout();
+
+	const onCopy = () => {
+		copyToClipboardWithTimeout(repoPlainTextContent);
 	};
 
 	return (
-		<div>
-			<div className="flex justify-between mb-2">
-				<h2 className="text-xl font-semibold">Repository Contents</h2>
-				<button onClick={handleCopyToClipboard} className="px-2 py-1 bg-gray-200 rounded">
-					Copy to Clipboard
-				</button>
-			</div>
-			<pre className="bg-gray-100 p-4 rounded overflow-x-auto text-black">{contents}</pre>
-		</div>
+		<Card className={cn("", className)} {...props}>
+			<CardHeader>
+				<div className="flex justify-between">
+					<CardTitle className="text-xl">Repository Contents</CardTitle>
+					<Button variant="outline" size="sm" className="text-xs" onClick={onCopy}>
+						{isCopiedWithTimeout ? <CheckIcon className="pr-2 size-6" /> : <CopyIcon className="pr-2 size-6" />}
+						{isCopiedWithTimeout ? "Copied!" : "Copy Whole Entire Repo"}
+					</Button>
+				</div>
+			</CardHeader>
+			<CardContent className="grid gap-4 overflow-x-auto">
+				<pre className="p-4 rounded overflow-x-auto">{repoPlainTextContent}</pre>
+			</CardContent>
+		</Card>
 	);
-};
-
-export default RepoContentDisplay;
+}

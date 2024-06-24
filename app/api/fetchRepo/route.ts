@@ -4,6 +4,8 @@ import fs from "fs";
 import path from "path";
 import util from "util";
 
+const FILE_PREFIX = "⤂<#📂FilePath#>⤃ -"; //An unlikely occuring string for path we can split on
+
 const execPromise = util.promisify(exec);
 
 const binaryExtensions = new Set([
@@ -109,13 +111,13 @@ async function readFilesRecursively(dir: string): Promise<string> {
 		} else {
 			const ext = path.extname(file).toLowerCase();
 			if (binaryExtensions.has(ext)) {
-				contents += `---- ${path.relative("/tmp", filePath)}\n[Binary file, content not displayed]\n\n`;
+				contents += `${FILE_PREFIX} ${path.relative("/tmp", filePath)}\n[Binary file, content not displayed]\n\n`;
 			} else {
 				try {
 					const fileContent = await fs.promises.readFile(filePath, "utf-8");
-					contents += `---- ${path.relative("/tmp", filePath)}\n${fileContent}\n\n`;
+					contents += `${FILE_PREFIX} ${path.relative("/tmp", filePath)}\n${fileContent}\n\n`;
 				} catch (error) {
-					contents += `---- ${path.relative("/tmp", filePath)}\n[Error reading file: ${error}]\n\n`;
+					contents += `${FILE_PREFIX} ${path.relative("/tmp", filePath)}\n[Error reading file: ${error}]\n\n`;
 				}
 			}
 		}

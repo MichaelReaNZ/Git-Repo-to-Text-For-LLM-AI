@@ -1,5 +1,7 @@
 // components/RepoInputForm.tsx
 import React, { useState } from "react";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
 
 interface RepoInputFormProps {
 	onSubmit: (url: string) => void;
@@ -15,16 +17,10 @@ const RepoInputForm: React.FC<RepoInputFormProps> = ({ onSubmit }) => {
 
 	return (
 		<form onSubmit={handleSubmit} className="mb-4">
-			<input
-				type="text"
-				value={url}
-				onChange={(e) => setUrl(e.target.value)}
-				placeholder="Enter Git repository URL"
-				className="w-full p-2 border rounded text-black"
-			/>
-			<button type="submit" className="mt-2 px-4 py-2 bg-blue-500 text-white rounded">
-				Fetch Repository
-			</button>
+			<div className="space-y-2">
+				<Input placeholder="Enter Git Repo URL Here" onChange={(e) => setUrl(e.target.value)} value={url} />
+				<Button type="submit">Get Repo as Text</Button>
+			</div>
 		</form>
 	);
 };
