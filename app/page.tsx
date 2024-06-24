@@ -28,7 +28,7 @@ const Home: React.FC = () => {
 		<main className="container mx-auto p-4">
 			<h1 className="text-2xl font-bold mb-4">Git Repo to Text For LLM AI</h1>
 			<RepoInputForm onSubmit={handleRepoSubmit} />
-			{isLoading && <p>Loading repository contents...</p>}
+			{isLoading && <p>Loading repository contents...(This can take some time)</p>}
 			{error && <p className="text-red-500">{error}</p>}
 			{repoContents && <RepoContentDisplay contents={repoContents} />}
 		</main>

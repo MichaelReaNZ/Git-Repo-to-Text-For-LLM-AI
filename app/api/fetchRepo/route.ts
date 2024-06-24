@@ -6,6 +6,41 @@ import util from "util";
 
 const execPromise = util.promisify(exec);
 
+const binaryExtensions = new Set([
+	".exe",
+	".dll",
+	".so",
+	".a",
+	".lib",
+	".dylib",
+	".o",
+	".obj",
+	".zip",
+	".tar",
+	".gz",
+	".rar",
+	".7z",
+	".iso",
+	".bin",
+	".pdf",
+	".doc",
+	".docx",
+	".xls",
+	".xlsx",
+	".ppt",
+	".pptx",
+	".jpg",
+	".jpeg",
+	".png",
+	".gif",
+	".mp3",
+	".mp4",
+	".avi",
+	".mov",
+	".ico",
+	// Add more binary extensions as needed
+]);
+
 export async function GET(request: Request) {
 	console.log("Received request to fetch repository contents");
 	const { searchParams } = new URL(request.url);
@@ -21,9 +56,7 @@ export async function GET(request: Request) {
 	} catch (error) {
 		return new Response(
 			`Failed to fetch repository contents: ${error instanceof Error ? error.message : String(error)}`,
-			{
-				status: 500,
-			}
+			{ status: 500 }
 		);
 	}
 }
@@ -50,22 +83,14 @@ async function cloneAndReadRepo(repoUrl: string): Promise<string> {
 	console.log(`Cloning repository ${repoUrl} to ${tempDir}`);
 
 	try {
-		// Clone the repository
 		await execPromise(`git clone ${repoUrl} ${tempDir}`);
-
-		// Read all files
 		const contents = await readFilesRecursively(tempDir);
-
 		console.log(`Finished reading repository contents`);
-		console.log(contents);
-
 		return contents;
 	} catch (error) {
 		console.error("Failed to clone and read repository", error);
-		// Return an empty string or a default error message
 		return "";
 	} finally {
-		// Clean up: remove the cloned repository
 		await execPromise(`rm -rf ${tempDir}`);
 	}
 }
@@ -79,12 +104,20 @@ async function readFilesRecursively(dir: string): Promise<string> {
 		const stat = await fs.promises.stat(filePath);
 
 		if (stat.isDirectory()) {
-			// Skip .git directory
 			if (file === ".git") continue;
 			contents += await readFilesRecursively(filePath);
 		} else {
-			const fileContent = await fs.promises.readFile(filePath, "utf-8");
-			contents += `---- ${path.relative("/tmp", filePath)}\n${fileContent}\n\n`;
+			const ext = path.extname(file).toLowerCase();
+			if (binaryExtensions.has(ext)) {
+				contents += `---- ${path.relative("/tmp", filePath)}\n[Binary file, content not displayed]\n\n`;
+			} else {
+				try {
+					const fileContent = await fs.promises.readFile(filePath, "utf-8");
+					contents += `---- ${path.relative("/tmp", filePath)}\n${fileContent}\n\n`;
+				} catch (error) {
+					contents += `---- ${path.relative("/tmp", filePath)}\n[Error reading file: ${error}]\n\n`;
+				}
+			}
 		}
 	}
 
