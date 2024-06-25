@@ -28,6 +28,7 @@ const RepoInputForm: React.FC<RepoInputFormProps> = ({ onSubmit }) => {
   return (
     <form onSubmit={handleSubmit} className="mb-4">
       <div className="space-y-2">
+        {/* TODO: Tickbox that defaults to "Ignore everything inside GITIGNORE file" */}
         <Input
           placeholder="Enter Git Repo URL Here"
           onChange={(e) => setUrl(e.target.value)}
